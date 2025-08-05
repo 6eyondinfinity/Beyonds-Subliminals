@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Subliminal Streamer</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
@@ -15,10 +15,11 @@
     }
     #bg {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(45deg,#0f0c29,#302b63,#24243e);
+      background: linear-gradient(45deg, #0f0c29, #302b63, #24243e);
       background-size: 600% 600%;
       animation: GradientAnimation 20s ease infinite;
-      filter: blur(30px); z-index: -2;
+      filter: blur(30px);
+      z-index: -2;
     }
     @keyframes GradientAnimation {
       0% { background-position:0% 50%; }
@@ -34,6 +35,187 @@
       padding: 2rem;
       box-shadow: 0 0 40px rgba(0,0,0,0.7);
       position: relative;
+    }
+    h1 {
+      font-size: 2.25rem;
+      text-align: center;
+      background: linear-gradient(90deg, #fff, #888, #fff);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      color: transparent;
+      animation: shine 4s infinite;
+      margin-bottom: 1rem;
+    }
+    @keyframes shine {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .inputs { display: grid; gap: 1rem; }
+    .inputs input {
+      padding: .75rem 1rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 1rem;
+      transition: border-color .3s, box-shadow .3s;
+    }
+    .inputs input:focus {
+      border-color: #fff;
+      box-shadow: 0 0 12px rgba(255,255,255,0.3);
+      outline: none;
+    }
+    .buttons { display: flex; gap: 1rem; margin: 1rem 0; }
+    .buttons button {
+      flex: 1;
+      padding: .75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .buttons button::after {
+      content: '';
+      position: absolute;
+      width: 120%; height: 100%;
+      top: 0; left: -110%;
+      background: rgba(255,255,255,0.2);
+      transform: skewX(-20deg);
+      transition: 0.6s;
+    }
+    .buttons button:hover::after { left: 110%; }
+    .players {
+      display: none;
+      margin-top: 1.5rem;
+      display: grid;
+      gap: 1rem;
+    }
+    .players iframe {
+      width: 100%; height: 220px;
+      border: none;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      opacity: 0;
+      animation: fadeIn 1s forwards;
+    }
+    @keyframes fadeIn { to { opacity: 1; } }
+    .signature {
+      margin-top: 2rem;
+      font-size: 1.25rem;
+      text-align: center;
+      background: linear-gradient(90deg, #fff, #0ff, #fff);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      color: transparent;
+      animation: shine 3s infinite;
+    }
+    .history {
+      margin-top: 1rem;
+      background: rgba(255,255,255,0.1);
+      padding: 1rem;
+      border-radius: 12px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    .history h2 { font-size: 1rem; margin-bottom: .5rem; color: #aaa; }
+    .history ul { list-style: none; padding-left: 0; }
+    .history li {
+      font-size: .9rem;
+      margin: .25rem 0;
+      cursor: grab;
+      color: #fff;
+      padding: .25rem 0;
+      transition: color .2s;
+    }
+    .history li:active { cursor: grabbing; }
+    .history li:hover { color: #0ff; }
+  </style>
+</head>
+<body>
+  <div id="bg"></div>
+  <div class="container">
+    <h1>🧠 Subliminal Streamer</h1>
+    <div class="inputs" id="inputs">
+      <input id="link1" type="text" placeholder="YouTube link #1" ondragover="event.preventDefault()" ondrop="handleDrop(event,1)" />
+      <input id="link2" type="text" placeholder="YouTube link #2" ondragover="event.preventDefault()" ondrop="handleDrop(event,2)" />
+      <input id="link3" type="text" placeholder="YouTube link #3" ondragover="event.preventDefault()" ondrop="handleDrop(event,3)" />
+      <input id="link4" type="text" placeholder="YouTube link #4" ondragover="event.preventDefault()" ondrop="handleDrop(event,4)" />
+    </div>
+    <div class="buttons">
+      <button id="playBtn">Play All</button>
+      <button id="backBtn" style="display:none;">🔙 Back</button>
+    </div>
+    <div class="players" id="players"></div>
+    <div class="history" id="history">
+      <h2>History (Drag to Input)</h2>
+      <ul id="historyList"></ul>
+    </div>
+    <div class="signature">Beyondinfinity</div>
+  </div>
+  <script>
+    const playBtn = document.getElementById('playBtn');
+    const backBtn = document.getElementById('backBtn');
+    const players = document.getElementById('players');
+    const inputsDiv = document.getElementById('inputs');
+    const historyList = document.getElementById('historyList');
+    const names = {
+      'DIWwYR20v_4':'Magnetic Aura',
+      '0z2s7S0kJ9Y':'Mind Calm',
+      'RYcaG64JkqM':'Lookmaxx Glow',
+      'GSv5HtYk7vs':'Deep Focus',
+      'mg7netw1JuM':'Memory Boost'
+    };
+    let history = JSON.parse(localStorage.getItem('subliminalHistory')||'[]');
+    const last = JSON.parse(localStorage.getItem('lastLinks')||'[]');
+    last.forEach((link,i)=>{ if(link) document.getElementById('link'+(i+1)).value = link; });
+    function renderHistory(){
+      historyList.innerHTML = '';
+      history.slice().reverse().forEach(link=>{
+        const li = document.createElement('li');
+        const m = link.match(/(?:youtu\.be\/|[?&]v=)([^&]+)/);
+        const id = m && m[1];
+        li.textContent = names[id]||link;
+        li.title = link;
+        li.draggable = true;
+        li.addEventListener('dragstart', e=> e.dataTransfer.setData('text/plain', link));
+        historyList.appendChild(li);
+      });
+    }
+    renderHistory();
+    function handleDrop(e, idx){ e.preventDefault(); const url = e.dataTransfer.getData('text/plain'); document.getElementById('link'+idx).value = url; }
+    playBtn.addEventListener('click', ()=>{
+      players.innerHTML = '';
+      const current = [];
+      for(let i=1;i<=4;i++){
+        const url = document.getElementById('link'+i).value.trim();
+        if(!url) continue;
+        current.push(url);
+        const m = url.match(/(?:youtu\.be\/|[?&]v=)([^&]+)/);
+        if(m){ const vid = m[1]; const ifr = document.createElement('iframe');
+          ifr.src = `https://www.youtube.com/embed/${vid}?autoplay=1&loop=1&playlist=${vid}`;
+          ifr.allow = 'autoplay; encrypted-media'; ifr.allowFullscreen = true;
+          players.appendChild(ifr);
+        }
+      }
+      if(players.children.length){
+        localStorage.setItem('lastLinks', JSON.stringify(current));
+        current.forEach(link=>{ if(!history.includes(link)) history.push(link); });
+        localStorage.setItem('subliminalHistory', JSON.stringify(history)); renderHistory();
+        inputsDiv.style.display = 'none'; playBtn.style.display = 'none'; backBtn.style.display = 'inline-block'; players.style.display = 'grid';
+      }
+    });
+    backBtn.addEventListener('click', ()=>{
+      players.innerHTML = '';
+      inputsDiv.style.display = 'grid'; playBtn.style.display = 'inline-block'; backBtn.style.display = 'none'; players.style.display = 'none';
+    });
+  </script>
+</body>
+</html>
     }
     h1 {
       font-size: 2.25rem; text-align: center;
